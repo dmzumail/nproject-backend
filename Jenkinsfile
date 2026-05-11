@@ -62,27 +62,29 @@ spec:
         stage('Update GitOps Manifests') {
             steps {
                 echo 'Updating k8s manifests...'
-                script {
-                    container('docker') {
-                        dir('k8s-temp') {
-                            git url: MANIFESTS_REPO, 
-                                branch: 'main',
-                                credentialsId: GITHUB_CREDS_ID
-                            
-                            sh """
-                                sed -i "s|image: ${REGISTRY}/${IMAGE_NAME}:.*|image: ${FULL_IMAGE}|g" apps/nproject/nproject-backend.yaml
-                            """
-                            
-                            withCredentials([usernamePassword(credentialsId: GITHUB_CREDS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                                sh '''
-                                    git config user.email "jenkins@nproject.local"
-                                    git config user.name "Jenkins CI Bot"
-                                    git add apps/nproject/nproject-backend.yaml
-                                    git commit -m "Auto-update: Bump image to ''' + env.IMAGE_TAG + '''" || echo "No changes to commit"
-                                    git push https://''' + env.GIT_USER + ':' + env.GIT_PASS + '''@github.com/dmzumail/k8s-manifests.git main
-                                '''
-                            }
-                        }
+                dir('k8s-temp') {
+                    
+                    // 1. Клонируем репозиторий манифестов
+                    git url: MANIFESTS_REPO, 
+                        branch: 'main',
+                        credentialsId: GITHUB_CREDS_ID
+                    
+                    // 2. Заменяем тег образа в файле
+                    sh """
+                        sed -i 's|image: .*|image: ${FULL_IMAGE}|g' apps/nproject/nproject-backend.yaml
+                    """
+                    
+                    // 3. Настраиваем Git
+                    sh 'git config user.email "jenkins@nproject.local"'
+                    sh 'git config user.name "Jenkins CI Bot"'
+                    
+                    // 4. Коммитим изменения
+                    sh "git add apps/nproject/nproject-backend.yaml"
+                    sh "git commit -m 'Auto-update: Bump image to ${IMAGE_TAG}' || echo 'No changes to commit'"
+                    
+                    // 5. Пушим изменения
+                    withCredentials([usernamePassword(credentialsId: GITHUB_CREDS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                        sh 'git push https://${GIT_USER}:${GIT_PASS}@github.com/dmzumail/k8s-manifests.git main'
                     }
                 }
             }
