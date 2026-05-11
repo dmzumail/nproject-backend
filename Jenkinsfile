@@ -45,7 +45,7 @@ spec:
             steps {
                 container('docker') {
                     echo "Building image: ${FULL_IMAGE}"
-                    sh "docker build -t ${FULL_IMAGE} ."
+                    sh "docker build -f app/appDockerfile -t ${FULL_IMAGE} app/"
                 }
             }
         }
