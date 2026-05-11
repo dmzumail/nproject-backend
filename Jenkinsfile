@@ -1,5 +1,27 @@
 pipeline {
-    agent any
+    // Запускаем пайплайн в отдельном поде с Docker
+    agent {
+        kubernetes {
+            label 'docker-agent'
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: docker
+    image: docker:cli
+    command: ["cat"]
+    tty: true
+    volumeMounts:
+    - name: docker-socket
+      mountPath: /var/run/docker.sock
+  volumes:
+  - name: docker-socket
+    hostPath:
+      path: /var/run/docker.sock
+'''
+        }
+    }
 
     environment {
         MANIFESTS_REPO = "https://github.com/dmzumail/k8s-manifests.git"
@@ -11,16 +33,6 @@ pipeline {
     }
 
     stages {
-        // Установка Docker CLI
-        stage('Install Docker CLI') {
-            steps {
-                echo 'Installing Docker CLI...'
-                sh '''
-                    apt-get update && apt-get install -y docker.io
-                    docker --version
-                '''
-            }
-        }
 
         stage('Checkout') {
             steps {
@@ -33,15 +45,20 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo "Building image: ${FULL_IMAGE}"
-                sh "docker build -t ${FULL_IMAGE} ."
+                //Выполняем в контейнере 'docker', где есть docker-cli
+                container('docker') {
+                    echo "Building image: ${FULL_IMAGE}"
+                    sh "docker build -t ${FULL_IMAGE} ."
+                }
             }
         }
 
         stage('Push to Registry') {
             steps {
-                echo "Pushing image..."
-                sh "docker push ${FULL_IMAGE}"
+                container('docker') {
+                    echo "Pushing image..."
+                    sh "docker push ${FULL_IMAGE}"
+                }
             }
         }
 
@@ -49,18 +66,20 @@ pipeline {
             steps {
                 echo 'Обновление k8s manifests...'
                 script {
-                    dir('k8s-temp') {
-                        git url: MANIFESTS_REPO, credentialsId: GITHUB_CREDS_ID
-                        sh """
-                            sed -i 's|image: .*|image: ${FULL_IMAGE}|g' prod/deployment.yaml
-                        """
-                        sh """
-                            git config user.email "jenkins@nproject.local"
-                            git config user.name "Jenkins CI Bot"
-                            git add prod/deployment.yaml
-                            git commit -m "Auto-update: Bump image to ${IMAGE_TAG}" || echo "No changes to commit"
-                            git push origin main
-                        """
+                    container('docker') {
+                        dir('k8s-temp') {
+                            git url: MANIFESTS_REPO, credentialsId: GITHUB_CREDS_ID
+                            sh """
+                                sed -i 's|image: .*|image: ${FULL_IMAGE}|g' prod/deployment.yaml
+                            """
+                            sh """
+                                git config user.email "jenkins@nproject.local"
+                                git config user.name "Jenkins CI Bot"
+                                git add prod/deployment.yaml
+                                git commit -m "Auto-update: Bump image to ${IMAGE_TAG}" || echo "No changes to commit"
+                                git push origin main
+                            """
+                        }
                     }
                 }
             }
@@ -69,9 +88,7 @@ pipeline {
     
     post {
         always {
-            sh 'rm -rf k8s-temp'
-            // Пропускаем очистку, если docker не установлен
-            sh 'docker image prune -f || true'
+            echo 'Build finished. Agent pod will be deleted automatically.'
         }
     }
 }
