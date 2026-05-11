@@ -1,8 +1,7 @@
 pipeline {
-    // Запускаем пайплайн в отдельном поде с Docker
     agent {
         kubernetes {
-            label 'docker-agent'
+            inheritFrom 'docker-agent'
             yaml '''
 apiVersion: v1
 kind: Pod
@@ -14,11 +13,11 @@ spec:
     tty: true
     volumeMounts:
     - name: docker-socket
-      mountPath: /var/run/docker.sock
+      mountPath: "/var/run/docker.sock"
   volumes:
   - name: docker-socket
     hostPath:
-      path: /var/run/docker.sock
+      path: "/var/run/docker.sock"
 '''
         }
     }
@@ -33,10 +32,9 @@ spec:
     }
 
     stages {
-
         stage('Checkout') {
             steps {
-                echo 'Проверка кода...'
+                echo 'Checking out code...'
                 git url: 'https://github.com/dmzumail/nproject-backend.git', 
                     branch: 'main',
                     credentialsId: GITHUB_CREDS_ID
@@ -45,7 +43,6 @@ spec:
 
         stage('Build Docker Image') {
             steps {
-                //Выполняем в контейнере 'docker', где есть docker-cli
                 container('docker') {
                     echo "Building image: ${FULL_IMAGE}"
                     sh "docker build -t ${FULL_IMAGE} ."
@@ -64,21 +61,25 @@ spec:
 
         stage('Update GitOps Manifests') {
             steps {
-                echo 'Обновление k8s manifests...'
+                echo 'Updating k8s manifests...'
                 script {
                     container('docker') {
                         dir('k8s-temp') {
                             git url: MANIFESTS_REPO, credentialsId: GITHUB_CREDS_ID
+                            
                             sh """
-                                sed -i 's|image: .*|image: ${FULL_IMAGE}|g' prod/deployment.yaml
+                                sed -i "s|image: ${REGISTRY}/${IMAGE_NAME}:.*|image: ${FULL_IMAGE}|g" prod/deployment.yaml
                             """
-                            sh """
-                                git config user.email "jenkins@nproject.local"
-                                git config user.name "Jenkins CI Bot"
-                                git add prod/deployment.yaml
-                                git commit -m "Auto-update: Bump image to ${IMAGE_TAG}" || echo "No changes to commit"
-                                git push origin main
-                            """
+                            
+                            withCredentials([usernamePassword(credentialsId: GITHUB_CREDS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                                sh """
+                                    git config user.email "jenkins@nproject.local"
+                                    git config user.name "Jenkins CI Bot"
+                                    git add prod/deployment.yaml
+                                    git commit -m "Auto-update: Bump image to ${IMAGE_TAG}" || echo "No changes to commit"
+                                    git push https://${GIT_USER}:${GIT_PASS}@github.com/dmzumail/k8s-manifests.git main
+                                """
+                            }
                         }
                     }
                 }
