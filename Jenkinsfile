@@ -65,7 +65,9 @@ spec:
                 script {
                     container('docker') {
                         dir('k8s-temp') {
-                            git url: MANIFESTS_REPO, credentialsId: GITHUB_CREDS_ID
+                            git url: MANIFESTS_REPO, 
+                                branch: 'main',
+                                credentialsId: GITHUB_CREDS_ID
                             
                             sh """
                                 sed -i "s|image: ${REGISTRY}/${IMAGE_NAME}:.*|image: ${FULL_IMAGE}|g" prod/deployment.yaml
