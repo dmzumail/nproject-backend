@@ -74,13 +74,13 @@ spec:
                             """
                             
                             withCredentials([usernamePassword(credentialsId: GITHUB_CREDS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                                sh """
+                                sh '''
                                     git config user.email "jenkins@nproject.local"
                                     git config user.name "Jenkins CI Bot"
                                     git add apps/nproject/nproject-backend.yaml
-                                    git commit -m "Auto-update: Bump image to ${IMAGE_TAG}" || echo "No changes to commit"
-                                    git push https://${GIT_USER}:${GIT_PASS}@github.com/dmzumail/k8s-manifests.git main
-                                """
+                                    git commit -m "Auto-update: Bump image to ''' + env.IMAGE_TAG + '''" || echo "No changes to commit"
+                                    git push https://''' + env.GIT_USER + ':' + env.GIT_PASS + '''@github.com/dmzumail/k8s-manifests.git main
+                                '''
                             }
                         }
                     }
