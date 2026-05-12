@@ -1,26 +1,5 @@
 pipeline {
-    agent {
-        kubernetes {
-            inheritFrom 'docker-agent'
-            yaml '''
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: docker
-    image: docker:cli
-    command: ["cat"]
-    tty: true
-    volumeMounts:
-    - name: docker-socket
-      mountPath: "/var/run/docker.sock"
-  volumes:
-  - name: docker-socket
-    hostPath:
-      path: "/var/run/docker.sock"
-'''
-        }
-    }
+    agent any
 
     environment {
         MANIFESTS_REPO = "https://github.com/dmzumail/k8s-manifests.git"
@@ -43,19 +22,15 @@ spec:
 
         stage('Build Docker Image') {
             steps {
-                container('docker') {
-                    echo "Building image: ${FULL_IMAGE}"
-                    sh "docker build -t ${FULL_IMAGE} ."
-                }
+                echo "Building image: ${FULL_IMAGE}"
+                sh "docker build -t ${FULL_IMAGE} ."
             }
         }
 
         stage('Push to Registry') {
             steps {
-                container('docker') {
-                    echo "Pushing image..."
-                    sh "docker push ${FULL_IMAGE}"
-                }
+                echo "Pushing image..."
+                sh "docker push ${FULL_IMAGE}"
             }
         }
 
@@ -63,26 +38,19 @@ spec:
             steps {
                 echo 'Updating k8s manifests...'
                 dir('k8s-temp') {
-                    
-                    // 1. Клонируем репозиторий манифестов
                     git url: MANIFESTS_REPO, 
                         branch: 'main',
                         credentialsId: GITHUB_CREDS_ID
                     
-                    // 2. Заменяем тег образа в файле
                     sh """
                         sed -i 's|image: .*|image: ${FULL_IMAGE}|g' apps/nproject/nproject-backend.yaml
                     """
                     
-                    // 3. Настраиваем Git
                     sh 'git config user.email "jenkins@nproject.local"'
                     sh 'git config user.name "Jenkins CI Bot"'
-                    
-                    // 4. Коммитим изменения
                     sh "git add apps/nproject/nproject-backend.yaml"
                     sh "git commit -m 'Auto-update: Bump image to ${IMAGE_TAG}' || echo 'No changes to commit'"
                     
-                    // 5. Пушим изменения
                     withCredentials([usernamePassword(credentialsId: GITHUB_CREDS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
                         sh 'git push https://${GIT_USER}:${GIT_PASS}@github.com/dmzumail/k8s-manifests.git main'
                     }
@@ -93,7 +61,8 @@ spec:
     
     post {
         always {
-            echo 'Build finished. Agent pod will be deleted automatically.'
+            echo 'Build finished.'
+            sh 'rm -rf k8s-temp || true'
         }
     }
 }
