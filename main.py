@@ -6,7 +6,7 @@ import httpx
 app = FastAPI(
     title="nproject.site — Спортивный секундомер",
     description="Интерактивный спортивный секундомер с погодой, развёрнутый на Kubernetes",
-    version="1.1.0"
+    version="1.3.0"
 )
 
 def wants_html(request: Request) -> bool:
@@ -14,6 +14,7 @@ def wants_html(request: Request) -> bool:
     return "text/html" in accept
 
 async def get_moscow_weather():
+    """Получает погоду в Москве через Open-Meteo (бесплатно, без ключа)."""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(
@@ -27,14 +28,14 @@ async def get_moscow_weather():
             code = cw.get("weathercode", 0)
 
             codes = {
-                0: "☀️ Ясно", 1: "🌤 Преим. ясно", 2: "⛅ Переменная облачность",
-                3: "☁️ Пасмурно", 45: "🌫 Туман", 51: "🌦 Слабый дождь",
-                61: " Дождь", 71: "️ Снег", 80: " Ливень", 95: " Гроза"
+                0: "☀️ Ясно", 1: " Преим. ясно", 2: "⛅ Переменная облачность",
+                3: "️ Пасмурно", 45: "🌫 Туман", 51: "🌦 Слабый дождь",
+                61: "🌧 Дождь", 71: "🌨 Снег", 80: "🌧 Ливень", 95: "⛈ Гроза"
             }
             desc = codes.get(code, f"🌡 Код {code}")
             return temp, desc, wind
     except Exception:
-        return "—", "️ Нет данных", "—"
+        return "—", "⚠️ Нет данных", "—"
 
 @app.get("/")
 async def read_root(request: Request):
@@ -48,57 +49,15 @@ async def read_root(request: Request):
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title>nproject.site — Спортивный секундомер</title>
             <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    background: #f4f7f6;
-                    color: #333;
-                    margin: 0;
-                    padding: 1rem;
-                }
-                .container {
-                    max-width: 900px;
-                    margin: 0 auto;
-                    display: flex;
-                    gap: 2rem;
-                    flex-wrap: wrap;
-                }
-                .stopwatch-section {
-                    flex: 2;
-                    min-width: 300px;
-                    background: #fff;
-                    padding: 2rem;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                }
-                .weather-section {
-                    flex: 1;
-                    min-width: 250px;
-                    background: #fff;
-                    padding: 2rem;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f7f6; color: #333; margin: 0; padding: 1rem; }
+                .container { max-width: 900px; margin: 0 auto; display: flex; gap: 2rem; flex-wrap: wrap; }
+                .stopwatch-section { flex: 2; min-width: 300px; background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+                .weather-section { flex: 1; min-width: 250px; background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; }
                 h1 { text-align: center; color: #2c3e50; margin-top: 0; margin-bottom: 1.5rem; }
-                .display {
-                    font-size: 3rem;
-                    text-align: center;
-                    font-family: monospace;
-                    margin: 1.5rem 0;
-                    padding: 0.5rem;
-                    background: #f8f9fa;
-                    border-radius: 8px;
-                    border: 1px solid #eee;
-                }
+                .display { font-size: 3rem; text-align: center; font-family: monospace; margin: 1.5rem 0; padding: 0.5rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
                 .controls { text-align: center; margin: 1.5rem 0; }
-                button {
-                    font-size: 1.1rem; padding: 0.6rem 1.2rem; margin: 0 0.4rem;
-                    border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;
-                }
+                button { font-size: 1.1rem; padding: 0.6rem 1.2rem; margin: 0 0.4rem; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
                 .start { background: #28a745; color: white; }
-                .stop { background: #dc3545; color: white; }
                 .lap { background: #17a2b8; color: white; }
                 .reset { background: #6c757d; color: white; }
                 button:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -109,14 +68,15 @@ async def read_root(request: Request):
                 .lap-col { width: 32%; text-align: right; }
                 .lap-col:first-child { text-align: left; }
                 .lap-item { border-bottom: 1px solid #eee; }
-                
-                /* Погодный виджет */
                 .weather-section h2 { text-align: center; margin-top: 0; color: #2c3e50; }
                 .weather-card { text-align: center; }
                 .temp { font-size: 3.5rem; font-weight: bold; color: #2c3e50; margin: 0.5rem 0; }
                 .desc { font-size: 1.2rem; color: #555; margin-bottom: 0.5rem; }
                 .wind { font-size: 0.9rem; color: #777; }
                 .hint { margin-top: 1.5rem; font-style: italic; color: #e67e22; font-weight: 500; font-size: 1rem; }
+                .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; }
+                .footer a { color: #17a2b8; text-decoration: none; font-weight: 500; }
+                .footer a:hover { text-decoration: underline; }
             </style>
         </head>
         <body>
@@ -126,7 +86,7 @@ async def read_root(request: Request):
                     <div class="display" id="display">00:00:00.000</div>
                     <div class="controls">
                         <button id="startBtn" class="start">▶️ Старт</button>
-                        <button id="lapBtn" class="lap" disabled>⏱️ Новый круг</button>
+                        <button id="lapBtn" class="lap" disabled>️ Новый круг</button>
                         <button id="resetBtn" class="reset">↺ Сброс</button>
                     </div>
                     <div class="laps">
@@ -149,6 +109,10 @@ async def read_root(request: Request):
                         <p class="hint">Посмотри погоду перед пробежкой</p>
                     </div>
                 </div>
+            </div>
+
+            <div class="footer">
+                <a href="/about">📖 О проекте</a>
             </div>
 
             <script>
@@ -187,7 +151,7 @@ async def read_root(request: Request):
                         startTime = Date.now();
                         lapStartTime = Date.now();
                         interval = setInterval(updateDisplay, 10);
-                        startBtn.textContent = '⏸️ Пауза';
+                        startBtn.textContent = '️ Пауза';
                         lapBtn.disabled = false;
                     } else {
                         clearInterval(interval);
@@ -240,6 +204,56 @@ async def read_root(request: Request):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "status": "ok"
         }
+
+@app.get("/about")
+async def about_page(request: Request):
+    if wants_html(request):
+        html = """<!DOCTYPE html>
+        <html lang="ru">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>О проекте — nproject.site</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background: #f4f7f6; color: #333; }
+                .card { background: #fff; padding: 2.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+                h1 { color: #2c3e50; margin-bottom: 1rem; font-size: 2rem; }
+                .subtitle { color: #555; font-size: 1.2rem; margin-bottom: 2rem; line-height: 1.6; }
+                .features { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0; text-align: left; }
+                .feature { background: #f8f9fa; padding: 1.5rem; border-radius: 12px; }
+                .feature h3 { margin-top: 0; color: #17a2b8; display: flex; align-items: center; gap: 0.5rem; }
+                .feature p { margin: 0; color: #444; line-height: 1.5; }
+                .tech-note { background: #e3f2fd; color: #1565c0; padding: 1rem; border-radius: 8px; margin-top: 2rem; font-size: 0.95rem; }
+                .nav-link { display: inline-block; margin-top: 2rem; padding: 0.8rem 1.5rem; background: #28a745; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s; }
+                .nav-link:hover { background: #218838; }
+                @media (max-width: 600px) { .features { grid-template-columns: 1fr; } }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>‍♂️ О проекте</h1>
+                <p class="subtitle">nproject.site — ваш цифровой помощник для тренировок.<br>Выходите бегать уверенно, зная погоду и свой темп.</p>
+                
+                <div class="features">
+                    <div class="feature">
+                        <h3>🌤 Погода перед стартом</h3>
+                        <p>Актуальная температура, ветер и состояние неба в Москве. Планируйте пробежку без сюрпризов: одевайтесь по погоде и выбирайте оптимальное время.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>⏱ Секундомер для кругов</h3>
+                        <p>Удобный таймер с функцией кругов. Засекайте время каждого отрезка, следите за прогрессом и улучшайте свои результаты на каждой тренировке.</p>
+                    </div>
+                </div>
+
+                <a href="/" class="nav-link">🏁 К секундомеру</a>
+            </div>
+        </body>
+        </html>"""
+        return HTMLResponse(html)
+    return {
+        "message": "About nproject.site",
+        "version": "1.3.0"
+    }
 
 @app.get("/healthz")
 def health_check():
