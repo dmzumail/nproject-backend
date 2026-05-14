@@ -263,8 +263,3 @@ def health_check():
 from prometheus_fastapi_instrumentator import Instrumentator
 
 Instrumentator().instrument(app).expose(app)
- #   B R O K E N   C O D E   F O R   R O L L B A C K   T E S T 
- d e f   b r o k e n _ f u n c t i o n ( ) : 
-         r e t u r n   u n d e f i n e d _ v a r i a b l e     #   N a m e E r r o r 
-  
- 
