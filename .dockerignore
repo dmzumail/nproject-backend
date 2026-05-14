@@ -1,0 +1,39 @@
+# Version control
+.git/
+.github/
+.gitignore
+
+# CI/CD & Build artifacts
+Jenkinsfile
+k8s-temp/
+k8s-temp@tmp/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.coverage
+*.egg-info/
+dist/
+build/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs & Temp
+*.log
+tmp/
+temp/
+
+# Docker files
+Dockerfile
+.dockerignore
