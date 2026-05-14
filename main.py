@@ -262,5 +262,4 @@ def health_check():
 # --- Мониторинг: экспорт метрик Prometheus ---
 from prometheus_fastapi_instrumentator import Instrumentator
 
-Instrumentator().instrument(app).expose(app)#   T r i g g e r   r e b u i l d   a f t e r   r o l l b a c k  
- 
+Instrumentator().instrument(app).expose(app)
