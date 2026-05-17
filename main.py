@@ -335,7 +335,7 @@ async def about_page(request: Request):
         </head>
         <body>
             <div class="card">
-                <h1>🏃‍♂️📈 О проекте</h1>
+                <h1>🏃‍♂️ О проекте</h1>
                 <p class="subtitle">nproject.site — ваш цифровой помощник для тренировок.<br>Выходите бегать уверенно, зная погоду и свой темп.</p>
                 
                 <div class="features">
