@@ -6,7 +6,7 @@ import httpx
 app = FastAPI(
     title="nproject.site — Спортивный секундомер",
     description="Интерактивный спортивный секундомер с погодой, развёрнутый на Kubernetes",
-    version="1.3.0"
+    version="1.4.0"  # Обновил версию
 )
 
 def wants_html(request: Request) -> bool:
@@ -77,6 +77,64 @@ async def read_root(request: Request):
                 .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; }
                 .footer a { color: #17a2b8; text-decoration: none; font-weight: 500; }
                 .footer a:hover { text-decoration: underline; }
+                
+                /* Стили для инструкции */
+                .instructions {
+                    margin-top: 2rem;
+                    padding: 1.5rem;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    border-left: 4px solid #17a2b8;
+                }
+                .instructions h2 {
+                    margin: 0 0 1rem 0;
+                    color: #2c3e50;
+                    font-size: 1.3rem;
+                }
+                .instruction-steps {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 0.8rem;
+                    margin-bottom: 1rem;
+                }
+                .step {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 0.5rem;
+                    font-size: 0.95rem;
+                    color: #444;
+                }
+                .step-num {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 24px;
+                    height: 24px;
+                    background: #17a2b8;
+                    color: white;
+                    border-radius: 50%;
+                    font-weight: bold;
+                    font-size: 0.85rem;
+                    flex-shrink: 0;
+                }
+                .instruction-note {
+                    margin: 0;
+                    font-size: 0.9rem;
+                    color: #666;
+                    font-style: normal;
+                }
+                .instruction-note kbd {
+                    background: #eee;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-family: monospace;
+                    font-size: 0.85rem;
+                    border: 1px solid #ccc;
+                }
+                @media (max-width: 600px) {
+                    .instruction-steps { grid-template-columns: 1fr; }
+                    .step { font-size: 0.9rem; }
+                }
             </style>
         </head>
         <body>
@@ -86,7 +144,7 @@ async def read_root(request: Request):
                     <div class="display" id="display">00:00:00.000</div>
                     <div class="controls">
                         <button id="startBtn" class="start">▶️ Старт</button>
-                        <button id="lapBtn" class="lap" disabled>️ Новый круг</button>
+                        <button id="lapBtn" class="lap" disabled>🏁 Новый круг</button>
                         <button id="resetBtn" class="reset">↺ Сброс</button>
                     </div>
                     <div class="laps">
@@ -97,6 +155,33 @@ async def read_root(request: Request):
                             <span class="lap-col">Общее время</span>
                         </div>
                         <div id="lapsList"></div>
+                    </div>
+                    
+                    <!-- Инструкция по использованию -->
+                    <div class="instructions">
+                        <h2>📖 Как пользоваться</h2>
+                        <div class="instruction-steps">
+                            <div class="step">
+                                <span class="step-num">1</span>
+                                <p>Нажми <strong>▶️ Старт</strong> для начала отсчёта</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">2</span>
+                                <p>Нажми <strong>🏁 Новый круг</strong> чтобы зафиксировать время круга</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">3</span>
+                                <p>Нажми <strong>⏸️ Пауза</strong> для временной остановки</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-num">4</span>
+                                <p>Нажми <strong>↺ Сброс</strong> чтобы начать заново</p>
+                            </div>
+                        </div>
+                        <p class="instruction-note">
+                            💡 Горячие клавиши: <kbd>Пробел</kbd> Старт/Пауза · 
+                            <kbd>L</kbd> Круг · <kbd>R</kbd> Сброс
+                        </p>
                     </div>
                 </div>
 
@@ -151,7 +236,7 @@ async def read_root(request: Request):
                         startTime = Date.now();
                         lapStartTime = Date.now();
                         interval = setInterval(updateDisplay, 10);
-                        startBtn.textContent = '️ Пауза';
+                        startBtn.textContent = '⏸️ Пауза';
                         lapBtn.disabled = false;
                     } else {
                         clearInterval(interval);
@@ -188,6 +273,25 @@ async def read_root(request: Request):
                     lapsList.innerHTML = '';
                     startBtn.textContent = '▶️ Старт';
                     lapBtn.disabled = true;
+                });
+                
+                // Горячие клавиши
+                document.addEventListener('keydown', (e) => {
+                    // Игнорируем, если пользователь печатает в поле ввода
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                    
+                    if (e.code === 'Space' || e.key === ' ') {
+                        e.preventDefault();
+                        startBtn.click();  // Пробел = Старт/Пауза
+                    }
+                    if (e.key === 'l' || e.key === 'L') {
+                        e.preventDefault();
+                        lapBtn.click();  // L = Новый круг
+                    }
+                    if (e.key === 'r' || e.key === 'R') {
+                        e.preventDefault();
+                        resetBtn.click();  // R = Сброс
+                    }
                 });
             </script>
         </body>
@@ -231,7 +335,7 @@ async def about_page(request: Request):
         </head>
         <body>
             <div class="card">
-                <h1>‍📈 О проекте</h1>
+                <h1>🏃‍♂️📈 О проекте</h1>
                 <p class="subtitle">nproject.site — ваш цифровой помощник для тренировок.<br>Выходите бегать уверенно, зная погоду и свой темп.</p>
                 
                 <div class="features">
@@ -252,7 +356,7 @@ async def about_page(request: Request):
         return HTMLResponse(html)
     return {
         "message": "About nproject.site",
-        "version": "1.3.0"
+        "version": "1.4.0"
     }
 
 @app.get("/healthz")
