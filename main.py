@@ -6,7 +6,7 @@ import httpx
 app = FastAPI(
     title="nproject.site — Спортивный секундомер",
     description="Интерактивный спортивный секундомер с погодой, развёрнутый на Kubernetes",
-    version="1.4.0"  # Обновил версию
+    version="1.4.1"  # Обновил версию
 )
 
 def wants_html(request: Request) -> bool:
