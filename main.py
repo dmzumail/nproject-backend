@@ -6,7 +6,7 @@ import httpx
 app = FastAPI(
     title="nproject.site — Спортивный секундомер",
     description="Интерактивный спортивный секундомер с погодой, развёрнутый на Kubernetes",
-    version="1.4.3"  # Обновлена версия
+    version="1.5.0"  # Новая версия
 )
 
 def wants_html(request: Request) -> bool:
@@ -14,7 +14,7 @@ def wants_html(request: Request) -> bool:
     return "text/html" in accept
 
 async def get_moscow_weather():
-    """Получает погоду в Москве через Open-Meteo (бесплатно, без ключа)."""
+    """Получает погоду в Москве через Open-Meteo"""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(
@@ -37,10 +37,40 @@ async def get_moscow_weather():
     except Exception:
         return "—", "⚠️ Нет данных", "—"
 
+def get_moscow_time():
+    """Возвращает текущее московское время и дату"""
+    try:
+        # Получаем текущее время в UTC и конвертируем в московское (UTC+3)
+        now_utc = datetime.now(timezone.utc)
+        moscow_offset = timezone(datetime.timedelta(hours=3))
+        now_moscow = now_utc.astimezone(moscow_offset)
+        
+        # Форматируем дату и время
+        date_str = now_moscow.strftime("%d.%m.%Y")
+        time_str = now_moscow.strftime("%H:%M:%S")
+        day_name = now_moscow.strftime("%A")
+        
+        # Перевод дней недели на русский
+        days_ru = {
+            "Monday": "Понедельник",
+            "Tuesday": "Вторник",
+            "Wednesday": "Среда",
+            "Thursday": "Четверг",
+            "Friday": "Пятница",
+            "Saturday": "Суббота",
+            "Sunday": "Воскресенье"
+        }
+        day_name_ru = days_ru.get(day_name, day_name)
+        
+        return time_str, date_str, day_name_ru
+    except Exception:
+        return "—", "—", "—"
+
 @app.get("/")
 async def read_root(request: Request):
     if wants_html(request):
         temp, desc, wind = await get_moscow_weather()
+        time_str, date_str, day_name = get_moscow_time()
 
         html = """<!DOCTYPE html>
         <html lang="ru">
@@ -52,7 +82,8 @@ async def read_root(request: Request):
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f7f6; color: #333; margin: 0; padding: 1rem; }
                 .container { max-width: 900px; margin: 0 auto; display: flex; gap: 2rem; flex-wrap: wrap; }
                 .stopwatch-section { flex: 2; min-width: 300px; background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-                .weather-section { flex: 1; min-width: 250px; background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; }
+                .sidebar-section { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 2rem; }
+                .widget { background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
                 h1 { text-align: center; color: #2c3e50; margin-top: 0; margin-bottom: 1.5rem; }
                 .display { font-size: 3rem; text-align: center; font-family: monospace; margin: 1.5rem 0; padding: 0.5rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
                 .controls { text-align: center; margin: 1.5rem 0; }
@@ -68,12 +99,22 @@ async def read_root(request: Request):
                 .lap-col { width: 32%; text-align: right; }
                 .lap-col:first-child { text-align: left; }
                 .lap-item { border-bottom: 1px solid #eee; }
-                .weather-section h2 { text-align: center; margin-top: 0; color: #2c3e50; }
+                
+                /* Weather Widget */
+                .widget h2 { text-align: center; margin-top: 0; color: #2c3e50; }
                 .weather-card { text-align: center; }
                 .temp { font-size: 3.5rem; font-weight: bold; color: #2c3e50; margin: 0.5rem 0; }
                 .desc { font-size: 1.2rem; color: #555; margin-bottom: 0.5rem; }
                 .wind { font-size: 0.9rem; color: #777; }
                 .hint { margin-top: 1.5rem; font-style: italic; color: #e67e22; font-weight: 500; font-size: 1rem; }
+                
+                /* Time Widget */
+                .time-card { text-align: center; }
+                .time-display { font-size: 2.8rem; font-weight: bold; color: #17a2b8; margin: 0.5rem 0; font-family: monospace; }
+                .date-display { font-size: 1.3rem; color: #2c3e50; margin-bottom: 0.3rem; }
+                .day-display { font-size: 1rem; color: #555; font-style: italic; }
+                .time-hint { margin-top: 1rem; font-size: 0.85rem; color: #777; }
+                
                 .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; }
                 .footer a { color: #17a2b8; text-decoration: none; font-weight: 500; }
                 .footer a:hover { text-decoration: underline; }
@@ -134,6 +175,8 @@ async def read_root(request: Request):
                 @media (max-width: 600px) {
                     .instruction-steps { grid-template-columns: 1fr; }
                     .step { font-size: 0.9rem; }
+                    .container { flex-direction: column; }
+                    .sidebar-section { flex-direction: column; }
                 }
             </style>
         </head>
@@ -185,13 +228,27 @@ async def read_root(request: Request):
                     </div>
                 </div>
 
-                <div class="weather-section">
-                    <h2>🌤 Погода в Москве</h2>
-                    <div class="weather-card">
-                        <div class="temp">{{TEMP}}°C</div>
-                        <div class="desc">{{DESC}}</div>
-                        <div class="wind">💨 Ветер: {{WIND}} м/с</div>
-                        <p class="hint">Посмотри погоду перед пробежкой</p>
+                <div class="sidebar-section">
+                    <!-- Weather Widget -->
+                    <div class="widget">
+                        <h2>🌤 Погода в Москве</h2>
+                        <div class="weather-card">
+                            <div class="temp">{{TEMP}}°C</div>
+                            <div class="desc">{{DESC}}</div>
+                            <div class="wind">💨 Ветер: {{WIND}} м/с</div>
+                            <p class="hint">Посмотри погоду перед пробежкой</p>
+                        </div>
+                    </div>
+
+                    <!-- Time Widget -->
+                    <div class="widget">
+                        <h2>🕐 Сверим часы</h2>
+                        <div class="time-card">
+                            <div class="time-display">{{TIME}}</div>
+                            <div class="date-display">{{DATE}}</div>
+                            <div class="day-display">{{DAY}}</div>
+                            <p class="time-hint">Московское время</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -299,7 +356,10 @@ async def read_root(request: Request):
 
         html = (html.replace("{{TEMP}}", str(temp))
                     .replace("{{DESC}}", desc)
-                    .replace("{{WIND}}", str(wind)))
+                    .replace("{{WIND}}", str(wind))
+                    .replace("{{TIME}}", time_str)
+                    .replace("{{DATE}}", date_str)
+                    .replace("{{DAY}}", day_name))
         
         return HTMLResponse(html)
     else:
@@ -356,7 +416,7 @@ async def about_page(request: Request):
         return HTMLResponse(html)
     return {
         "message": "About nproject.site",
-        "version": "1.4.0"
+        "version": "1.5.0"
     }
 
 @app.get("/healthz")
