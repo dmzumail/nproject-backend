@@ -385,7 +385,7 @@ async def about_page(request: Request):
                 .card { background: #fff; padding: 2.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
                 h1 { color: #2c3e50; margin-bottom: 1rem; font-size: 2rem; }
                 .subtitle { color: #555; font-size: 1.2rem; margin-bottom: 2rem; line-height: 1.6; }
-                .features { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0; text-align: left; }
+                .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin: 2rem 0; text-align: left; }
                 .feature { background: #f8f9fa; padding: 1.5rem; border-radius: 12px; }
                 .feature h3 { margin-top: 0; color: #17a2b8; display: flex; align-items: center; gap: 0.5rem; }
                 .feature p { margin: 0; color: #444; line-height: 1.5; }
@@ -398,7 +398,7 @@ async def about_page(request: Request):
         <body>
             <div class="card">
                 <h1>🏃‍♂️ О проекте</h1>
-                <p class="subtitle">nproject.site — ваш цифровой помощник для тренировок.<br>Выходите бегать уверенно, зная погоду и свой темп.</p>
+                <p class="subtitle">nproject.site — ваш цифровой помощник для тренировок.<br>Выходите бегать уверенно, зная погоду, время и свой темп.</p>
                 
                 <div class="features">
                     <div class="feature">
@@ -408,6 +408,10 @@ async def about_page(request: Request):
                     <div class="feature">
                         <h3>⏱ Секундомер для кругов</h3>
                         <p>Удобный таймер с функцией кругов. Засекайте время каждого отрезка, следите за прогрессом и улучшайте свои результаты на каждой тренировке.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🕐 Сверим часы</h3>
+                        <p>Точное московское время с датой и днём недели. Синхронизируйтесь с местным временем перед стартом — никаких опозданий на тренировки!</p>
                     </div>
                 </div>
 
