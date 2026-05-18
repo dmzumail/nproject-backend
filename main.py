@@ -401,19 +401,37 @@ async def about_page(request: Request):
                 <p class="subtitle">nproject.site — ваш цифровой помощник для тренировок.<br>Выходите бегать уверенно, зная погоду, время и свой темп.</p>
                 
                 <div class="features">
-                    <div class="feature">
-                        <h3>🌤 Погода перед стартом</h3>
-                        <p>Актуальная температура, ветер и состояние неба в Москве. Планируйте пробежку без сюрпризов: одевайтесь по погоде и выбирайте оптимальное время.</p>
-                    </div>
-                    <div class="feature">
-                        <h3>⏱ Секундомер для кругов</h3>
-                        <p>Удобный таймер с функцией кругов. Засекайте время каждого отрезка, следите за прогрессом и улучшайте свои результаты на каждой тренировке.</p>
-                    </div>
-                    <div class="feature">
-                        <h3>🕐 Сверим часы</h3>
-                        <p>Точное московское время с датой и днём недели. Синхронизируйтесь с местным временем перед стартом — никаких опозданий на тренировки!</p>
-                    </div>
-                </div>
+    <div class="feature">
+        <h3>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#17a2b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; vertical-align: middle;">
+                <path d="M17.5 19c0-1.7-1.3-3-3-3h-1V8h4v2h1.5c1.7 0 3-1.3 3-3s-1.3-3-3-3h-5c-1.7 0-3 1.3-3 3v9c0 1.7 1.3 3 3 3h1.5c1.7 0 3-1.3 3-3z"></path>
+                <circle cx="12" cy="12" r="9"></circle>
+            </svg>
+            Погода перед стартом
+        </h3>
+        <p>Актуальная температура, ветер и состояние неба в Москве. Планируйте пробежку без сюрпризов: одевайтесь по погоде и выбирайте оптимальное время.</p>
+    </div>
+    <div class="feature">
+        <h3>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#17a2b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; vertical-align: middle;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Секундомер для кругов
+        </h3>
+        <p>Удобный таймер с функцией кругов. Засекайте время каждого отрезка, следите за прогрессом и улучшайте свои результаты на каждой тренировке.</p>
+    </div>
+    <div class="feature">
+        <h3>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#17a2b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; vertical-align: middle;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Сверим часы
+        </h3>
+        <p>Точное московское время с датой и днём недели. Синхронизируйтесь с местным временем перед стартом — никаких опозданий на тренировки!</p>
+    </div>
+</div>
 
                 <a href="/" class="nav-link">🏁 К секундомеру</a>
             </div>
