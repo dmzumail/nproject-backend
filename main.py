@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 import httpx
@@ -6,7 +6,7 @@ import httpx
 app = FastAPI(
     title="nproject.site — Спортивный секундомер",
     description="Интерактивный спортивный секундомер с погодой, развёрнутый на Kubernetes",
-    version="1.5.0"  # Новая версия
+    version="1.5.1"
 )
 
 def wants_html(request: Request) -> bool:
@@ -42,7 +42,7 @@ def get_moscow_time():
     try:
         # Получаем текущее время в UTC и конвертируем в московское (UTC+3)
         now_utc = datetime.now(timezone.utc)
-        moscow_offset = timezone(datetime.timedelta(hours=3))
+        moscow_offset = timezone(timedelta(hours=3))
         now_moscow = now_utc.astimezone(moscow_offset)
         
         # Форматируем дату и время
@@ -63,7 +63,9 @@ def get_moscow_time():
         day_name_ru = days_ru.get(day_name, day_name)
         
         return time_str, date_str, day_name_ru
-    except Exception:
+    except Exception as e:
+        # Логируем ошибку для отладки
+        print(f"Error getting Moscow time: {e}")
         return "—", "—", "—"
 
 @app.get("/")
@@ -416,7 +418,7 @@ async def about_page(request: Request):
         return HTMLResponse(html)
     return {
         "message": "About nproject.site",
-        "version": "1.5.0"
+        "version": "1.5.1"
     }
 
 @app.get("/healthz")
