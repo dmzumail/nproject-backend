@@ -70,6 +70,9 @@ def get_moscow_time():
 
 @app.get("/")
 async def read_root(request: Request):
+    # 🚨 НАМЕРЕННАЯ ОШИБКА ДЛЯ ТЕСТА ОТКАТА
+    raise Exception("TEST ERROR - Canary automatic rollback test")
+    
     if wants_html(request):
         temp, desc, wind = await get_moscow_weather()
         time_str, date_str, day_name = get_moscow_time()
