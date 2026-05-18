@@ -43,12 +43,14 @@ pipeline {
                         credentialsId: GITHUB_CREDS_ID
                     
                     sh """
-                        sed -i 's|image: .*|image: ${FULL_IMAGE}|g' apps/nproject/nproject-backend.yaml
+                        sed -i 's|image: .*|image: ${FULL_IMAGE}|g' apps/nproject/canary-rollout.yaml
                     """
                     
                     sh 'git config user.email "jenkins@nproject.local"'
                     sh 'git config user.name "Jenkins CI Bot"'
-                    sh "git add apps/nproject/nproject-backend.yaml"
+                    
+                    sh "git add apps/nproject/canary-rollout.yaml"
+                    
                     sh "git commit -m 'Auto-update: Bump image to ${IMAGE_TAG}' || echo 'No changes to commit'"
                     
                     withCredentials([usernamePassword(credentialsId: GITHUB_CREDS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
